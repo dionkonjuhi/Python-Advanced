@@ -1,8 +1,4 @@
-import sqlite3
-from fileinput import close
 
-from models import Movie, MovieCreate
-from streamlit import title
 
 
 def create_connection():
