@@ -1,9 +1,13 @@
-import streamlit as st
+import requests
 import pandas as pd
+import streamlit as st
 
-import database
 
+# =========================================================
+# CONFIG
+# =========================================================
 
+API_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
     page_title="Employee Management System",
@@ -12,52 +16,141 @@ st.set_page_config(
 )
 
 
+# =========================================================
+# API FUNCTIONS
+# =========================================================
+
+def get_employees():
+
+    try:
+
+        response = requests.get(
+            f"{API_URL}/employees"
+        )
+
+        if response.status_code == 200:
+            return response.json()
+
+        return []
+
+    except requests.exceptions.ConnectionError:
+
+        st.error(
+            "FastAPI nuk është duke punuar. "
+            "Starto backend-in fillimisht."
+        )
+
+        return []
 
 
-database.create_table()
+def create_employee(data):
+
+    return requests.post(
+        f"{API_URL}/employees",
+        json=data
+    )
 
 
+def update_employee(employee_id, data):
 
-st.title("Employee Management System")
+    return requests.put(
+        f"{API_URL}/employees/{employee_id}",
+        json=data
+    )
+
+
+def delete_employee(employee_id):
+
+    return requests.delete(
+        f"{API_URL}/employees/{employee_id}"
+    )
+
+
+def search_employees(query):
+
+    try:
+
+        response = requests.get(
+            f"{API_URL}/search",
+            params={"q": query}
+        )
+
+        if response.status_code == 200:
+            return response.json()
+
+        return []
+
+    except requests.exceptions.ConnectionError:
+
+        st.error("Nuk mund të lidhet me API.")
+
+        return []
+
+
+# =========================================================
+# HEADER
+# =========================================================
+
+st.title("👨‍💼 Employee Management System")
 
 st.write(
-    "Manage employees using Python, SQLite and Streamlit"
+    "Employee Management me Streamlit + FastAPI + SQLite"
 )
 
+st.divider()
 
 
+# =========================================================
+# LOAD EMPLOYEES
+# =========================================================
 
-employees = database.get_all_employees()
+employees = get_employees()
 
+
+# =========================================================
+# DASHBOARD
+# =========================================================
+
+st.header("📊 Dashboard")
+
+
+total_employees = len(employees)
+
+total_salary = sum(
+    float(employee["salary"])
+    for employee in employees
+)
+
+average_salary = (
+    total_salary / total_employees
+    if total_employees > 0
+    else 0
+)
 
 
 col1, col2, col3 = st.columns(3)
 
+
 with col1:
+
     st.metric(
-        "Total Employees",
-        len(employees)
+        "👥 Total Employees",
+        total_employees
     )
 
+
 with col2:
-    if employees:
-        total_salary = sum(float(employee[6]) for employee in employees)
-    else:
-        total_salary = 0
 
     st.metric(
-        "Total Salary",
+        "💰 Total Salary",
         f"${total_salary:,.2f}"
     )
 
+
 with col3:
-    if employees:
-        average_salary = total_salary / len(employees)
-    else:
-        average_salary = 0
 
     st.metric(
-        "Average Salary",
+        "📈 Average Salary",
         f"${average_salary:,.2f}"
     )
 
@@ -65,216 +158,151 @@ with col3:
 st.divider()
 
 
+# =========================================================
+# ADD EMPLOYEE
+# =========================================================
 
-st.subheader("Employee Information")
+st.header("➕ Add Employee")
 
 
-with st.form("employee_form"):
+with st.form("add_employee_form"):
 
     col1, col2 = st.columns(2)
 
     with col1:
+
         first_name = st.text_input(
-            "First Name"
-        )
-
-        email = st.text_input(
-            "Email"
-        )
-
-        position = st.text_input(
-            "Position"
+            "Emër",
+            placeholder="Shkruaj emrin"
         )
 
     with col2:
+
         last_name = st.text_input(
-            "Last Name"
-        )
-
-        phone = st.text_input(
-            "Phone"
-        )
-
-        salary = st.number_input(
-            "Salary",
-            min_value=0.0,
-            step=100.0,
-            format="%.2f"
-        )
-
-    st.write("")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        add_employee_button = st.form_submit_button(
-            " Add Employee",
-            use_container_width=True
-        )
-
-    with col2:
-        update_employee_button = st.form_submit_button(
-            "✏ Update Employee",
-            use_container_width=True
-        )
-
-    with col3:
-        clear_button = st.form_submit_button(
-            " Clear",
-            use_container_width=True
+            "Mbiemër",
+            placeholder="Shkruaj mbiemrin"
         )
 
 
-
-
-if add_employee_button:
-
-    if not first_name.strip():
-        st.error("Please enter the first name.")
-
-    elif not last_name.strip():
-        st.error("Please enter the last name.")
-
-    elif not email.strip():
-        st.error("Please enter the email.")
-
-    elif not position.strip():
-        st.error("Please enter the position.")
-
-    elif salary < 0:
-        st.error("Salary cannot be negative.")
-
-    else:
-
-        database.add_employee(
-            first_name.strip(),
-            last_name.strip(),
-            email.strip(),
-            phone.strip(),
-            position.strip(),
-            salary
-        )
-
-        st.success("Employee added successfully.")
-
-        st.rerun()
-
-
-
-
-if update_employee_button:
-
-    selected_id = st.session_state.get("selected_employee_id")
-
-    if selected_id is None:
-
-        st.warning(
-            "Please select an employee from the table first."
-        )
-
-    elif not first_name.strip():
-
-        st.error("Please enter the first name.")
-
-    elif not last_name.strip():
-
-        st.error("Please enter the last name.")
-
-    elif not email.strip():
-
-        st.error("Please enter the email.")
-
-    elif not position.strip():
-
-        st.error("Please enter the position.")
-
-    else:
-
-        database.update_employee(
-            selected_id,
-            first_name.strip(),
-            last_name.strip(),
-            email.strip(),
-            phone.strip(),
-            position.strip(),
-            salary
-        )
-
-        st.success("Employee updated successfully.")
-
-        st.session_state.selected_employee_id = None
-
-        st.rerun()
-
-
-
-
-if clear_button:
-
-    st.session_state.selected_employee_id = None
-
-    st.rerun()
-
-
-
-
-st.divider()
-
-st.subheader("Search Employees")
-
-col1, col2 = st.columns([4, 1])
-
-with col1:
-
-    search_text = st.text_input(
-        "Search by name, email, phone or position",
-        key="search_box"
+    salary = st.number_input(
+        "Salary",
+        min_value=0.0,
+        step=100.0,
+        format="%.2f"
     )
 
-with col2:
 
-    search_button = st.button(
-        "🔎 Search",
+    submitted = st.form_submit_button(
+        "➕ Add Employee",
         use_container_width=True
     )
 
 
+    if submitted:
+
+        if not first_name.strip():
+
+            st.error("Emri është i detyrueshëm.")
+
+        elif not last_name.strip():
+
+            st.error("Mbiemri është i detyrueshëm.")
+
+        else:
+
+            response = create_employee({
+
+                "first_name":
+                    first_name.strip(),
+
+                "last_name":
+                    last_name.strip(),
+
+                "salary":
+                    salary
+
+            })
 
 
-if search_button and search_text.strip():
+            if response.status_code == 201:
 
-    employees = database.search_employees(
+                st.success(
+                    "Employee u shtua me sukses!"
+                )
+
+                st.rerun()
+
+            else:
+
+                try:
+
+                    error = response.json()["detail"]
+
+                except:
+
+                    error = "Nuk mund të shtohet employee."
+
+                st.error(error)
+
+
+st.divider()
+
+
+# =========================================================
+# SEARCH
+# =========================================================
+
+st.header("🔎 Search Employee")
+
+
+search_text = st.text_input(
+    "Kërko sipas emrit ose mbiemrit",
+    placeholder="p.sh. Ardit ose Krasniqi"
+)
+
+
+display_employees = employees
+
+
+if search_text.strip():
+
+    display_employees = search_employees(
         search_text.strip()
     )
 
-elif not search_text.strip():
 
-    employees = database.get_all_employees()
+# =========================================================
+# EMPLOYEE TABLE
+# =========================================================
+
+st.header("👥 Employee List")
 
 
-
-st.subheader("Employee List")
-
-
-if employees:
+if display_employees:
 
     table_data = []
 
-    for employee in employees:
+    for employee in display_employees:
 
-        table_data.append(
-            {
-                "ID": employee[0],
-                "First Name": employee[1],
-                "Last Name": employee[2],
-                "Email": employee[3],
-                "Phone": employee[4],
-                "Position": employee[5],
-                "Salary": f"${float(employee[6]):,.2f}"
-            }
-        )
+        table_data.append({
+
+            "ID":
+                employee["id"],
+
+            "Emër":
+                employee["first_name"],
+
+            "Mbiemër":
+                employee["last_name"],
+
+            "Salary":
+                f"${float(employee['salary']):,.2f}"
+
+        })
+
 
     df = pd.DataFrame(table_data)
+
 
     st.dataframe(
         df,
@@ -284,110 +312,203 @@ if employees:
 
 else:
 
-    st.info("No employees found.")
-
-
+    st.info(
+        "Nuk ka asnjë employee."
+    )
 
 
 st.divider()
 
-st.subheader("Select Employee")
+
+# =========================================================
+# MANAGE EMPLOYEE
+# =========================================================
+
+st.header("⚙️ Manage Employee")
 
 
 if employees:
 
     employee_options = {
-        f"{employee[0]} - {employee[1]} {employee[2]}":
-        employee[0]
+
+        f"ID {employee['id']} - "
+        f"{employee['first_name']} "
+        f"{employee['last_name']}":
+        employee["id"]
+
         for employee in employees
     }
 
+
     selected_employee = st.selectbox(
-        "Choose an employee",
-        [""] + list(employee_options.keys())
+        "Zgjidh Employee",
+        list(employee_options.keys())
     )
 
-    if selected_employee:
 
-        selected_id = employee_options[selected_employee]
-
-        st.session_state.selected_employee_id = selected_id
-
-        employee = database.get_employee(
-            selected_id
-        )
-
-        if employee:
-
-            st.write(
-                f"**Selected:** {employee[1]} {employee[2]}"
-            )
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-                st.write(
-                    f"📧 Email: {employee[3]}"
-                )
-
-                st.write(
-                    f" Phone: {employee[4]}"
-                )
-
-            with col2:
-
-                st.write(
-                    f"💼 Position: {employee[5]}"
-                )
-
-                st.write(
-                    f"💰 Salary: ${float(employee[6]):,.2f}"
-                )
+    selected_id = employee_options[
+        selected_employee
+    ]
 
 
+    employee = next(
 
+        (
+            e for e in employees
+            if e["id"] == selected_id
+        ),
 
-st.subheader("Delete Employee")
-
-
-selected_id = st.session_state.get(
-    "selected_employee_id"
-)
-
-
-if selected_id is not None:
-
-    employee = database.get_employee(
-        selected_id
+        None
     )
+
 
     if employee:
 
-        st.warning(
-            f"You are about to delete "
-            f"{employee[1]} {employee[2]}."
+        st.subheader(
+            f"✏️ Edit Employee "
+            f"(ID: {employee['id']})"
         )
+
+
+        # =================================================
+        # UPDATE
+        # =================================================
+
+        with st.form("update_employee_form"):
+
+            col1, col2 = st.columns(2)
+
+
+            with col1:
+
+                new_first_name = st.text_input(
+                    "Emër",
+                    value=employee["first_name"]
+                )
+
+
+            with col2:
+
+                new_last_name = st.text_input(
+                    "Mbiemër",
+                    value=employee["last_name"]
+                )
+
+
+            new_salary = st.number_input(
+                "Salary",
+                min_value=0.0,
+                value=float(employee["salary"]),
+                step=100.0,
+                format="%.2f"
+            )
+
+
+            update_button = st.form_submit_button(
+                "💾 Update Employee",
+                use_container_width=True
+            )
+
+
+            if update_button:
+
+                if not new_first_name.strip():
+
+                    st.error(
+                        "Emri është i detyrueshëm."
+                    )
+
+                elif not new_last_name.strip():
+
+                    st.error(
+                        "Mbiemri është i detyrueshëm."
+                    )
+
+                else:
+
+                    response = update_employee(
+
+                        selected_id,
+
+                        {
+                            "first_name":
+                                new_first_name.strip(),
+
+                            "last_name":
+                                new_last_name.strip(),
+
+                            "salary":
+                                new_salary
+                        }
+                    )
+
+
+                    if response.status_code == 200:
+
+                        st.success(
+                            "Employee u përditësua me sukses!"
+                        )
+
+                        st.rerun()
+
+                    else:
+
+                        try:
+
+                            error = response.json()["detail"]
+
+                        except:
+
+                            error = "Update failed."
+
+                        st.error(error)
+
+
+        st.divider()
+
+
+        # =================================================
+        # DELETE
+        # =================================================
+
+        st.subheader("🗑️ Delete Employee")
+
+
+        st.warning(
+            f"Po përgatiteni të fshini: "
+            f"{employee['first_name']} "
+            f"{employee['last_name']} "
+            f"(ID: {employee['id']})"
+        )
+
 
         if st.button(
             "🗑️ Delete Employee",
-            type="primary"
+            type="primary",
+            use_container_width=True
         ):
 
-            database.delete_employee(
+            response = delete_employee(
                 selected_id
             )
 
-            st.session_state.selected_employee_id = None
 
-            st.success(
-                "Employee deleted successfully."
-            )
+            if response.status_code == 200:
 
-            st.rerun()
+                st.success(
+                    "Employee u fshi me sukses!"
+                )
+
+                st.rerun()
+
+            else:
+
+                st.error(
+                    "Nuk mund të fshihet employee."
+                )
 
 else:
 
     st.info(
-        "Select an employee above to enable deletion."
+        "Nuk ka employees për të menaxhuar."
     )

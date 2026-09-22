@@ -1,25 +1,27 @@
 import sqlite3
 
+
 DATABASE_NAME = "employees.db"
 
 
-def connect():
-    return sqlite3.connect(DATABASE_NAME)
+def get_connection():
+    connection = sqlite3.connect(DATABASE_NAME)
+    connection.row_factory = sqlite3.Row
+    return connection
 
 
 def create_table():
-    connection = connect()
-    cursor = connection.cursor()
+    connection = get_connection()
 
-    cursor.execute("""
+    connection.execute("""
         CREATE TABLE IF NOT EXISTS employees (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
-            email TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
             phone TEXT,
             position TEXT NOT NULL,
-            salary REAL NOT NULL
+            salary REAL NOT NULL DEFAULT 0
         )
     """)
 
@@ -27,30 +29,14 @@ def create_table():
     connection.close()
 
 
-def add_employee(first_name, last_name, email, phone, position, salary):
-    connection = connect()
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        INSERT INTO employees
-        (first_name, last_name, email, phone, position, salary)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (first_name, last_name, email, phone, position, salary))
-
-    connection.commit()
-    connection.close()
-
-
 def get_all_employees():
-    connection = connect()
-    cursor = connection.cursor()
+    connection = get_connection()
 
-    cursor.execute("""
-        SELECT * FROM employees
+    employees = connection.execute("""
+        SELECT *
+        FROM employees
         ORDER BY id DESC
-    """)
-
-    employees = cursor.fetchall()
+    """).fetchall()
 
     connection.close()
 
@@ -58,30 +44,73 @@ def get_all_employees():
 
 
 def get_employee(employee_id):
-    connection = connect()
-    cursor = connection.cursor()
+    connection = get_connection()
 
-    cursor.execute("""
-        SELECT * FROM employees
+    employee = connection.execute("""
+        SELECT *
+        FROM employees
         WHERE id = ?
-    """, (employee_id,))
-
-    employee = cursor.fetchone()
+    """, (employee_id,)).fetchone()
 
     connection.close()
 
     return employee
 
 
-def update_employee(employee_id, first_name, last_name, email,
-                    phone, position, salary):
+def add_employee(
+    first_name,
+    last_name,
+    email,
+    phone,
+    position,
+    salary
+):
+    connection = get_connection()
 
-    connection = connect()
-    cursor = connection.cursor()
+    cursor = connection.execute("""
+        INSERT INTO employees
+        (
+            first_name,
+            last_name,
+            email,
+            phone,
+            position,
+            salary
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        first_name,
+        last_name,
+        email,
+        phone,
+        position,
+        salary
+    ))
 
-    cursor.execute("""
+    connection.commit()
+
+    employee_id = cursor.lastrowid
+
+    connection.close()
+
+    return employee_id
+
+
+def update_employee(
+    employee_id,
+    first_name,
+    last_name,
+    email,
+    phone,
+    position,
+    salary
+):
+    connection = get_connection()
+
+    connection.execute("""
         UPDATE employees
-        SET first_name = ?,
+        SET
+            first_name = ?,
             last_name = ?,
             email = ?,
             phone = ?,
@@ -103,10 +132,9 @@ def update_employee(employee_id, first_name, last_name, email,
 
 
 def delete_employee(employee_id):
-    connection = connect()
-    cursor = connection.cursor()
+    connection = get_connection()
 
-    cursor.execute("""
+    connection.execute("""
         DELETE FROM employees
         WHERE id = ?
     """, (employee_id,))
@@ -116,18 +144,19 @@ def delete_employee(employee_id):
 
 
 def search_employees(search_text):
-    connection = connect()
-    cursor = connection.cursor()
+    connection = get_connection()
 
     search = f"%{search_text}%"
 
-    cursor.execute("""
-        SELECT * FROM employees
-        WHERE first_name LIKE ?
-           OR last_name LIKE ?
-           OR email LIKE ?
-           OR phone LIKE ?
-           OR position LIKE ?
+    employees = connection.execute("""
+        SELECT *
+        FROM employees
+        WHERE
+            first_name LIKE ?
+            OR last_name LIKE ?
+            OR email LIKE ?
+            OR phone LIKE ?
+            OR position LIKE ?
         ORDER BY id DESC
     """, (
         search,
@@ -135,11 +164,8 @@ def search_employees(search_text):
         search,
         search,
         search
-    ))
-
-    employees = cursor.fetchall()
+    )).fetchall()
 
     connection.close()
 
     return employees
-
