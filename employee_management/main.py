@@ -38,9 +38,7 @@ class Employee(BaseModel):
     salary: float
 
 
-# =========================
-# HOME
-# =========================
+
 
 @app.get("/")
 def home():
@@ -50,9 +48,6 @@ def home():
     }
 
 
-# =========================
-# GET ALL EMPLOYEES
-# =========================
 
 @app.get("/employees")
 def get_employees():
@@ -65,9 +60,6 @@ def get_employees():
     ]
 
 
-# =========================
-# GET ONE EMPLOYEE
-# =========================
 
 @app.get("/employees/{employee_id}")
 def get_one_employee(employee_id: int):
@@ -83,9 +75,6 @@ def get_one_employee(employee_id: int):
     return dict(employee)
 
 
-# =========================
-# CREATE EMPLOYEE
-# =========================
 
 @app.post("/employees", status_code=201)
 def create_employee(employee: Employee):
@@ -146,9 +135,7 @@ def create_employee(employee: Employee):
     }
 
 
-# =========================
-# UPDATE EMPLOYEE
-# =========================
+
 
 @app.put("/employees/{employee_id}")
 def edit_employee(
@@ -220,9 +207,8 @@ def edit_employee(
     }
 
 
-# =========================
-# DELETE EMPLOYEE
-# =========================
+
+
 
 @app.delete("/employees/{employee_id}")
 def remove_employee(employee_id: int):
@@ -242,9 +228,7 @@ def remove_employee(employee_id: int):
     }
 
 
-# =========================
-# SEARCH
-# =========================
+
 
 @app.get("/search")
 def search(q: str):
