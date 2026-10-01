@@ -18,16 +18,13 @@ app = FastAPI(
 )
 
 
-# =========================
-# DATABASE
-# =========================
+
 
 create_table()
 
 
-# =========================
-# EMPLOYEE MODEL
-# =========================
+
+
 
 class Employee(BaseModel):
     first_name: str

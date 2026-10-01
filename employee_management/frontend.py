@@ -13,9 +13,7 @@ st.set_page_config(
 )
 
 
-# =========================
-# API FUNCTIONS
-# =========================
+
 
 def get_employees():
 
@@ -107,9 +105,7 @@ def search_employees(query):
         return []
 
 
-# =========================
-# HEADER
-# =========================
+
 
 st.title(
     "👨‍💼 Employee Management System"
@@ -122,16 +118,12 @@ st.write(
 st.divider()
 
 
-# =========================
-# GET EMPLOYEES
-# =========================
+
 
 employees = get_employees()
 
 
-# =========================
-# DASHBOARD
-# =========================
+
 
 st.header("📊 Dashboard")
 
@@ -182,9 +174,7 @@ with col3:
 st.divider()
 
 
-# =========================
-# ADD EMPLOYEE
-# =========================
+
 
 st.header("➕ Add Employee")
 
@@ -320,9 +310,7 @@ if submitted:
 st.divider()
 
 
-# =========================
-# SEARCH
-# =========================
+
 
 st.header("🔎 Search Employee")
 
@@ -344,9 +332,7 @@ else:
     display_employees = employees
 
 
-# =========================
-# EMPLOYEE LIST
-# =========================
+
 
 st.header("👥 Employee List")
 
@@ -404,9 +390,7 @@ else:
 st.divider()
 
 
-# =========================
-# MANAGE EMPLOYEE
-# =========================
+
 
 st.header("⚙️ Manage Employee")
 
@@ -455,9 +439,7 @@ else:
 
     if employee:
 
-        # =========================
-        # UPDATE
-        # =========================
+
 
         st.subheader(
             f"✏️ Edit Employee "
@@ -607,9 +589,7 @@ else:
         st.divider()
 
 
-        # =========================
-        # DELETE
-        # =========================
+
 
         st.subheader(
             "🗑️ Delete Employee"
